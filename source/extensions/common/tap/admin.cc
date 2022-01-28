@@ -8,6 +8,7 @@
 #include "source/common/buffer/buffer_impl.h"
 #include "source/common/protobuf/message_validator_impl.h"
 #include "source/common/protobuf/utility.h"
+#include "source/extensions/common/tap/config_id_map.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -21,13 +22,18 @@ AdminHandlerSharedPtr AdminHandler::getSingleton(Server::Admin& admin,
                                                  Singleton::Manager& singleton_manager,
                                                  Event::Dispatcher& main_thread_dispatcher) {
   return singleton_manager.getTyped<AdminHandler>(
-      SINGLETON_MANAGER_REGISTERED_NAME(tap_admin_handler), [&admin, &main_thread_dispatcher] {
-        return std::make_shared<AdminHandler>(admin, main_thread_dispatcher);
+      SINGLETON_MANAGER_REGISTERED_NAME(tap_admin_handler),
+      [&admin, &singleton_manager, &main_thread_dispatcher] {
+        AdminHandlerSharedPtr admin_handler = std::make_shared<AdminHandler>(
+            admin, main_thread_dispatcher, ConfigIdMap::getSingleton(singleton_manager));
+        return admin_handler;
       });
 }
 
-AdminHandler::AdminHandler(Server::Admin& admin, Event::Dispatcher& main_thread_dispatcher)
-    : admin_(admin), main_thread_dispatcher_(main_thread_dispatcher) {
+AdminHandler::AdminHandler(Server::Admin& admin, Event::Dispatcher& main_thread_dispatcher,
+                           ConfigIdMapSharedPtr config_id_map)
+    : admin_(admin), main_thread_dispatcher_(main_thread_dispatcher),
+      config_id_map_(config_id_map) {
   const bool rc =
       admin_.addHandler("/tap", "tap filter control", MAKE_ADMIN_HANDLER(handler), true, true);
   RELEASE_ASSERT(rc, "/tap admin endpoint is taken");
@@ -63,23 +69,17 @@ Http::Code AdminHandler::handler(absl::string_view, Http::HeaderMap&, Buffer::In
   }
 
   ENVOY_LOG(debug, "tap admin request for config_id={}", tap_request.config_id());
-  if (config_id_map_.count(tap_request.config_id()) == 0) {
+  if (!config_id_map_->hasConfigId(tap_request.config_id())) {
     return badRequest(
         response, fmt::format("Unknown config id '{}'. No extension has registered with this id.",
                               tap_request.config_id()));
   }
-  for (auto config : config_id_map_[tap_request.config_id()]) {
-    config->newTapConfig(tap_request.tap_config(), this);
-  }
+  config_id_map_->registerTapConfig(tap_request.config_id(), tap_request.tap_config(), this);
 
   admin_stream.setEndStreamOnComplete(false);
   admin_stream.addOnDestroyCallback([this] {
-    for (auto config : config_id_map_[attached_request_.value().config_id_]) {
-      ENVOY_LOG(debug, "detach tap admin request for config_id={}",
-                attached_request_.value().config_id_);
-      config->clearTapConfig();
-    }
-    attached_request_ = absl::nullopt;
+    config_id_map_->unregisterTapConfig(attached_request_->id());
+    attached_request_.reset(); // remove ref to attached_request_
   });
   attached_request_.emplace(tap_request.config_id(), tap_request.tap_config(), &admin_stream);
   return Http::Code::OK;
@@ -92,22 +92,17 @@ Http::Code AdminHandler::badRequest(Buffer::Instance& response, absl::string_vie
 }
 
 void AdminHandler::registerConfig(ExtensionConfig& config, const std::string& config_id) {
-  ASSERT(!config_id.empty());
-  ASSERT(config_id_map_[config_id].count(&config) == 0);
-  config_id_map_[config_id].insert(&config);
-  if (attached_request_.has_value() && attached_request_.value().config_id_ == config_id) {
-    config.newTapConfig(attached_request_.value().config_, this);
+  config_id_map_->registerExtensionConfig(config, config_id);
+
+  // Attached request only exists if an active tap is running
+  if (attached_request_ && attached_request_->id() == config_id) {
+    // Just register TapConfig with the new extension config
+    config.newTapConfig(attached_request_->config(), this);
   }
 }
 
 void AdminHandler::unregisterConfig(ExtensionConfig& config) {
-  ASSERT(!config.adminId().empty());
-  std::string admin_id(config.adminId());
-  ASSERT(config_id_map_[admin_id].count(&config) == 1);
-  config_id_map_[admin_id].erase(&config);
-  if (config_id_map_[admin_id].empty()) {
-    config_id_map_.erase(admin_id);
-  }
+  config_id_map_->unregisterExtensionConfig(config);
 }
 
 void AdminHandler::AdminPerTapSinkHandle::submitTrace(

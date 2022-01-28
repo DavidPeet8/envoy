@@ -3,6 +3,7 @@
 #include "envoy/server/admin.h"
 #include "envoy/singleton/manager.h"
 
+#include "source/extensions/common/tap/config_id_map.h"
 #include "source/extensions/common/tap/tap.h"
 
 #include "absl/container/node_hash_set.h"
@@ -25,7 +26,8 @@ class AdminHandler : public Singleton::Instance,
                      public Extensions::Common::Tap::Sink,
                      Logger::Loggable<Logger::Id::tap> {
 public:
-  AdminHandler(Server::Admin& admin, Event::Dispatcher& main_thread_dispatcher);
+  AdminHandler(Server::Admin& admin, Event::Dispatcher& main_thread_dispatcher,
+               ConfigIdMapSharedPtr config_id_map);
   ~AdminHandler() override;
 
   /**
@@ -83,8 +85,8 @@ private:
 
   Server::Admin& admin_;
   Event::Dispatcher& main_thread_dispatcher_;
-  absl::node_hash_map<std::string, absl::node_hash_set<ExtensionConfig*>> config_id_map_;
-  absl::optional<const AttachedRequest> attached_request_;
+  ConfigIdMapSharedPtr config_id_map_; // Set dynamically to be ConfigIdMap singleton
+  std::shared_ptr<AttachedRequest> attached_request_;
 };
 
 } // namespace Tap

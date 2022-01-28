@@ -1,6 +1,7 @@
 #include "envoy/config/tap/v3/common.pb.h"
 
 #include "source/extensions/common/tap/admin.h"
+#include "source/extensions/common/tap/config_id_map.h"
 
 #include "test/mocks/server/admin.h"
 #include "test/mocks/server/admin_stream.h"
@@ -34,7 +35,8 @@ public:
     EXPECT_CALL(admin_, addHandler("/tap", "tap filter control", _, true, true))
         .WillOnce(DoAll(SaveArg<2>(&cb_), Return(true)));
     EXPECT_CALL(admin_, socket());
-    handler_ = std::make_unique<AdminHandler>(admin_, main_thread_dispatcher_);
+    handler_ = std::make_unique<AdminHandler>(admin_, main_thread_dispatcher_,
+                                              std::make_shared<ConfigIdMap>());
   }
 
   ~AdminHandlerTest() override {

@@ -131,6 +131,15 @@ envoy_cc_test(
 )
 
 envoy_cc_test(
+    name = "config_ids_handler_test",
+    srcs = ["config_ids_handler_test.cc"],
+    deps = [
+        ":admin_instance_lib",
+        "@envoy_api//envoy/config/tap/v3:pkg_cc_proto",
+    ],
+)
+
+envoy_cc_test(
     name = "init_dump_handler_test",
     srcs = ["init_dump_handler_test.cc"],
     deps = [

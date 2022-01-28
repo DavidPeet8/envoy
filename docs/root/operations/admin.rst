@@ -669,6 +669,10 @@ modify different aspects of the server:
 
   * :ref:`HTTP tap filter configuration <config_http_filters_tap_admin_handler>`
 
+.. http:get:: /tap/config_ids
+
+  Dumps a newline separated list of valid config_id strings for use with the ``/tap`` endpoint.
+
 .. http:post:: /reopen_logs
 
   Triggers reopen of all access logs. Behavior is similar to SIGUSR1 handling.

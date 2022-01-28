@@ -34,10 +34,24 @@ envoy_cc_library(
 )
 
 envoy_cc_library(
+    name = "config_id_map",
+    srcs = ["config_id_map.cc"],
+    hdrs = ["config_id_map.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":tap_interface",
+        "//envoy/singleton:manager_interface",
+        "//source/common/common:minimal_logger_lib",
+        "@envoy_api//envoy/admin/v3:pkg_cc_proto",
+    ],
+)
+
+envoy_cc_library(
     name = "admin",
     srcs = ["admin.cc"],
     hdrs = ["admin.h"],
     deps = [
+        ":config_id_map",
         ":tap_interface",
         "//envoy/server:admin_interface",
         "//envoy/singleton:manager_interface",

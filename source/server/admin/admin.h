@@ -39,6 +39,7 @@
 #include "source/server/admin/admin_filter.h"
 #include "source/server/admin/clusters_handler.h"
 #include "source/server/admin/config_dump_handler.h"
+#include "source/server/admin/config_ids_handler.h"
 #include "source/server/admin/config_tracker_impl.h"
 #include "source/server/admin/init_dump_handler.h"
 #include "source/server/admin/listeners_handler.h"
@@ -461,6 +462,7 @@ private:
   NullScopedRouteConfigProvider scoped_route_config_provider_;
   Server::ClustersHandler clusters_handler_;
   Server::ConfigDumpHandler config_dump_handler_;
+  Server::ConfigIdsHandler config_ids_handler_;
   Server::InitDumpHandler init_dump_handler_;
   Server::StatsHandler stats_handler_;
   Server::LogsHandler logs_handler_;

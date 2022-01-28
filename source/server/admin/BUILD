@@ -16,6 +16,7 @@ envoy_cc_library(
         ":admin_filter_lib",
         ":clusters_handler_lib",
         ":config_dump_handler_lib",
+        ":config_ids_handler_lib",
         ":config_tracker_lib",
         ":init_dump_handler_lib",
         ":listeners_handler_lib",
@@ -260,6 +261,23 @@ envoy_cc_library(
         "@envoy_api//envoy/admin/v3:pkg_cc_proto",
         "@envoy_api//envoy/config/core/v3:pkg_cc_proto",
         "@envoy_api//envoy/config/endpoint/v3:pkg_cc_proto",
+    ],
+)
+
+envoy_cc_library(
+    name = "config_ids_handler_lib",
+    srcs = ["config_ids_handler.cc"],
+    hdrs = ["config_ids_handler.h"],
+    deps = [
+        "//envoy/buffer:buffer_interface",
+        "//envoy/http:codes_interface",
+        "//envoy/http:header_map_interface",
+        "//envoy/server:instance_interface",
+        "//source/common/http:headers_lib",
+        "//source/common/network:utility_lib",
+        "//source/extensions/common/tap:config_id_map",
+        "//source/server/admin:handler_ctx_lib",
+        "//source/server/admin:utils_lib",
     ],
 )
 

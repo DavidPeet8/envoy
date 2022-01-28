@@ -969,6 +969,8 @@ envoy_cc_test(
         "integration_test.cc",
         "integration_test.h",
     ],
+    # Uber-internal: This test is flaky in CI.
+    flaky = True,
     shard_count = 2,
     deps = [
         ":http_integration_lib",

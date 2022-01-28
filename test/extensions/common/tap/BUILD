@@ -33,6 +33,15 @@ envoy_cc_test(
 )
 
 envoy_cc_test(
+    name = "config_id_map_test",
+    srcs = ["config_id_map_test.cc"],
+    deps = [
+        "//source/extensions/common/tap:config_id_map",
+        "@envoy_api//envoy/config/tap/v3:pkg_cc_proto",
+    ],
+)
+
+envoy_cc_test(
     name = "tap_config_base_test",
     srcs = ["tap_config_base_test.cc"],
     deps = [

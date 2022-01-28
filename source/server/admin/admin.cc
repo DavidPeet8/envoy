@@ -34,6 +34,7 @@
 #include "source/common/protobuf/utility.h"
 #include "source/common/router/config_impl.h"
 #include "source/extensions/request_id/uuid/config.h"
+#include "source/server/admin/config_ids_handler.h"
 #include "source/server/admin/utils.h"
 #include "source/server/listener_impl.h"
 
@@ -155,10 +156,10 @@ AdminImpl::AdminImpl(const std::string& profile_path, Server::Instance& server,
           Http::ConnectionManagerImpl::generateTracingStats("http.admin.", no_op_store_)),
       route_config_provider_(server.timeSource()),
       scoped_route_config_provider_(server.timeSource()), clusters_handler_(server),
-      config_dump_handler_(config_tracker_, server), init_dump_handler_(server),
-      stats_handler_(server), logs_handler_(server), profiling_handler_(profile_path),
-      runtime_handler_(server), listeners_handler_(server), server_cmd_handler_(server),
-      server_info_handler_(server),
+      config_dump_handler_(config_tracker_, server), config_ids_handler_(server),
+      init_dump_handler_(server), stats_handler_(server), logs_handler_(server),
+      profiling_handler_(profile_path), runtime_handler_(server), listeners_handler_(server),
+      server_cmd_handler_(server), server_info_handler_(server),
       // TODO(jsedgwick) add /runtime_reset endpoint that removes all admin-set values
       handlers_{
           makeHandler("/", "Admin home page", MAKE_ADMIN_HANDLER(handlerAdminHome), false, false),
@@ -222,6 +223,8 @@ AdminImpl::AdminImpl(const std::string& profile_path, Server::Instance& server,
                       MAKE_ADMIN_HANDLER(runtime_handler_.handlerRuntimeModify), false, true),
           makeHandler("/reopen_logs", "reopen access logs",
                       MAKE_ADMIN_HANDLER(logs_handler_.handlerReopenLogs), false, true),
+          makeHandler("/tap/config_ids", "obtain config IDs for tap filters",
+                      MAKE_ADMIN_HANDLER(config_ids_handler_.handlerConfigIds), false, false),
       },
       date_provider_(server.dispatcher().timeSource()),
       admin_filter_chain_(std::make_shared<AdminFilterChain>()),
